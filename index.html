@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>研报天团 · 评价看板</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+  :root { --bg:#0d1117; --card:#161b22; --border:#30363d; --text:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --green:#3fb950; --red:#f85149; --orange:#d29922; --gold:#ffd700; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
+  .container { max-width:1400px; margin:0 auto; padding:20px; }
+
+  /* Header */
+  .header { display:flex; align-items:center; gap:16px; padding:20px 0; border-bottom:1px solid var(--border); margin-bottom:24px; }
+  .header h1 { font-size:24px; font-weight:700; }
+  .header .badge { background:var(--accent); color:#fff; padding:2px 10px; border-radius:12px; font-size:12px; }
+  .header .sub { color:var(--muted); font-size:14px; margin-left:auto; }
+
+  /* Stats row */
+  .stats-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-bottom:24px; }
+  .stat-card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:16px; }
+  .stat-card .num { font-size:28px; font-weight:700; }
+  .stat-card .label { font-size:13px; color:var(--muted); margin-top:4px; }
+  .stat-card .num.gold { color:var(--gold); }
+  .stat-card .num.blue { color:var(--accent); }
+  .stat-card .num.green { color:var(--green); }
+
+  /* Tabs */
+  .tabs { display:flex; gap:4px; margin-bottom:20px; border-bottom:1px solid var(--border); }
+  .tab { padding:10px 20px; cursor:pointer; color:var(--muted); font-size:14px; border-bottom:2px solid transparent; transition:all .2s; }
+  .tab:hover { color:var(--text); }
+  .tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+  .tab-content { display:none; }
+  .tab-content.active { display:block; }
+
+  /* Cards */
+  .card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:20px; margin-bottom:16px; }
+  .card h3 { font-size:16px; font-weight:600; margin-bottom:12px; }
+  .chart-box { width:100%; height:400px; }
+
+  /* Institution ranking */
+  .rank-item { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); }
+  .rank-item:last-child { border-bottom:none; }
+  .rank-num { width:28px; height:28px; border-radius:50%; background:#1f2937; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; }
+  .rank-num.gold { background:var(--gold); color:#000; }
+  .rank-num.silver { background:#c0c0c0; color:#000; }
+  .rank-num.bronze { background:#cd7f32; color:#fff; }
+  .rank-info { flex:1; }
+  .rank-info .name { font-weight:600; }
+  .rank-info .detail { font-size:12px; color:var(--muted); }
+  .rank-score { font-size:20px; font-weight:700; }
+  .rank-bar { height:6px; background:#1f2937; border-radius:3px; margin-top:4px; }
+  .rank-bar-fill { height:100%; border-radius:3px; transition:width .5s; }
+
+  /* Prediction table */
+  .pred-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .pred-table th { text-align:left; padding:8px 10px; color:var(--muted); border-bottom:1px solid var(--border); font-weight:500; cursor:pointer; white-space:nowrap; }
+  .pred-table th:hover { color:var(--text); }
+  .pred-table td { padding:8px 10px; border-bottom:1px solid var(--border); }
+  .pred-table tr:hover { background:rgba(88,166,255,.05); }
+  .tag { display:inline-block; padding:1px 8px; border-radius:10px; font-size:11px; font-weight:500; }
+  .tag-ok { background:rgba(63,185,80,.15); color:var(--green); }
+  .tag-fail { background:rgba(248,81,73,.15); color:var(--red); }
+  .tag-pending { background:rgba(210,153,34,.15); color:var(--orange); }
+
+  /* Framework diagram */
+  .fw-layer { display:flex; align-items:stretch; gap:12px; margin-bottom:8px; }
+  .fw-label { width:40px; background:var(--accent); color:#fff; border-radius:6px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex-shrink:0; }
+  .fw-content { flex:1; background:#1f2937; border-radius:6px; padding:12px; }
+  .fw-content .title { font-weight:600; margin-bottom:4px; }
+  .fw-content .desc { font-size:12px; color:var(--muted); }
+  .fw-arrow { text-align:center; color:var(--muted); font-size:18px; line-height:1; margin:0; }
+
+  /* Filter bar */
+  .filter-bar { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+  .filter-bar select, .filter-bar input { background:#1f2937; border:1px solid var(--border); color:var(--text); padding:6px 12px; border-radius:6px; font-size:13px; }
+  .filter-bar select { min-width:120px; }
+
+  /* Buttons */
+  .btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:6px; border:none; font-size:13px; cursor:pointer; font-weight:500; }
+  .btn-primary { background:var(--accent); color:#fff; }
+  .btn-primary:hover { opacity:.85; }
+  .btn-outline { background:transparent; border:1px solid var(--border); color:var(--text); }
+  .btn-outline:hover { border-color:var(--accent); color:var(--accent); }
+  .btn-group { display:flex; gap:8px; }
+
+  /* Section header with actions */
+  .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .section-header h3 { margin-bottom:0; }
+
+  /* Prediction detail modal */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:100; align-items:center; justify-content:center; }
+  .modal-overlay.show { display:flex; }
+  .modal { background:var(--card); border:1px solid var(--border); border-radius:12px; width:90%; max-width:560px; max-height:80vh; overflow:auto; padding:24px; }
+  .modal h3 { margin-bottom:16px; }
+  .modal .field { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border); font-size:13px; }
+  .modal .field .val { font-weight:500; text-align:right; max-width:60%; }
+  .modal-close { float:right; background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer; }
+  .modal-close:hover { color:var(--text); }
+
+  .mt-12 { margin-top:12px; }
+  .text-muted { color:var(--muted); }
+  .text-center { text-align:center; }
+
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media(max-width:900px){ .row { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="container" id="app">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>📊 研报天团 · 评价看板</h1>
+    <span class="badge">MVP v0.2</span>
+    <span class="sub">机构 skill 蒸馏 · 预测评分 · 可溯源</span>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row" id="statsRow"></div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" data-tab="overview">全景概览</div>
+    <div class="tab" data-tab="predictions">预测评分</div>
+    <div class="tab" data-tab="market">行情走势</div>
+    <div class="tab" data-tab="framework">中信框架</div>
+  </div>
+
+  <!-- Tab: Overview -->
+  <div class="tab-content active" id="tab-overview">
+    <div class="row">
+      <div class="card">
+        <h3>🏆 机构排名</h3>
+        <div id="rankingList"></div>
+      </div>
+      <div class="card">
+        <h3>📈 10Y 国债收益率走势</h3>
+        <div class="chart-box" id="overviewChart"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>🎯 评分分布</h3>
+      <div class="chart-box" id="scoreDistChart"></div>
+    </div>
+  </div>
+
+  <!-- Tab: Predictions -->
+  <div class="tab-content" id="tab-predictions">
+    <div class="card">
+      <div class="section-header">
+        <h3>📋 预测评分明细</h3>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="exportCSV()">⬇ 导出 CSV</button>
+          <button class="btn btn-outline" onclick="exportJSON()">⬇ 导出 JSON</button>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <select id="filterInst" onchange="renderPredictions()"><option value="">全部机构</option></select>
+        <select id="filterResult" onchange="renderPredictions()"><option value="">全部结果</option><option value="hit">方向命中</option><option value="miss">方向未中</option></select>
+        <input type="text" id="filterSearch" placeholder="搜索预测标的..." oninput="renderPredictions()" style="flex:1;min-width:120px;">
+      </div>
+      <div style="overflow-x:auto">
+        <table class="pred-table" id="predTable">
+          <thead>
+            <tr><th data-sort="score" onclick="sortPreds('score')">综合分 ▾</th><th data-sort="date" onclick="sortPreds('date')">日期</th><th data-sort="inst" onclick="sortPreds('inst')">机构</th><th data-sort="target" onclick="sortPreds('target')">预测标的</th><th data-sort="horizon" onclick="sortPreds('horizon')">时间窗</th><th data-sort="dirScore" onclick="sortPreds('dirScore')">方向</th><th>幅度误差</th><th>区间</th><th></th></tr>
+          </thead>
+          <tbody id="predBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab: Market -->
+  <div class="tab-content" id="tab-market">
+    <div class="card">
+      <div class="section-header">
+        <h3>📊 利率债收益率曲线</h3>
+        <button class="btn btn-outline" onclick="exportChartData()">⬇ 导出数据</button>
+      </div>
+      <div class="chart-box" id="marketChart"></div>
+    </div>
+  </div>
+
+  <!-- Tab: Framework -->
+  <div class="tab-content" id="tab-framework">
+    <div class="card">
+      <h3>🏛️ 中信证券 · 利率策略分析框架</h3>
+      <p class="text-muted" style="margin-bottom:16px">蒸馏自2026年利率债策略报告 · 评分验证 76/100</p>
+      <div id="frameworkDiagram"></div>
+    </div>
+    <div class="card">
+      <h3>📜 中信证券 2026 预测一览</h3>
+      <div id="citicPredList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <h3 id="modalTitle">预测详情</h3>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+var DATA = {"timeSeries": [{"d": "20260104", "t10": 1.8423, "t30": 2.254, "omo": 1.4, "cdb10": 1.9934}, {"d": "20260105", "t10": 1.8582, "t30": 2.2824, "omo": 1.4, "cdb10": 2.0024}, {"d": "20260106", "t10": 1.8824, "t30": 2.3083, "omo": 1.4, "cdb10": 2.0276}, {"d": "20260107", "t10": 1.9014, "t30": 2.3344, "omo": 1.4, "cdb10": 2.0426}, {"d": "20260108", "t10": 1.8884, "t30": 2.3155, "omo": 1.4, "cdb10": 2.0286}, {"d": "20260109", "t10": 1.879, "t30": 2.3045, "omo": 1.4, "cdb10": 2.0324}, {"d": "20260112", "t10": 1.8602, "t30": 2.2914, "omo": 1.4, "cdb10": 2.0204}, {"d": "20260113", "t10": 1.852, "t30": 2.2925, "omo": 1.4, "cdb10": 2.021}, {"d": "20260114", "t10": 1.8499, "t30": 2.3031, "omo": 1.4, "cdb10": 2.017}, {"d": "20260115", "t10": 1.8564, "t30": 2.3078, "omo": 1.4, "cdb10": 2.017}, {"d": "20260116", "t10": 1.8419, "t30": 2.3033, "omo": 1.4, "cdb10": 2.014}, {"d": "20260119", "t10": 1.8399, "t30": 2.3065, "omo": 1.4, "cdb10": 2.0168}, {"d": "20260120", "t10": 1.8323, "t30": 2.338, "omo": 1.4, "cdb10": 2.0014}, {"d": "20260121", "t10": 1.8306, "t30": 2.3026, "omo": 1.4, "cdb10": 1.9818}, {"d": "20260122", "t10": 1.8422, "t30": 2.3101, "omo": 1.4, "cdb10": 1.9918}, {"d": "20260123", "t10": 1.8295, "t30": 2.2861, "omo": 1.4, "cdb10": 1.9798}, {"d": "20260126", "t10": 1.8248, "t30": 2.2701, "omo": 1.4, "cdb10": 1.9729}, {"d": "20260127", "t10": 1.8297, "t30": 2.285, "omo": 1.4, "cdb10": 1.9755}, {"d": "20260128", "t10": 1.8191, "t30": 2.279, "omo": 1.4, "cdb10": 1.9798}, {"d": "20260129", "t10": 1.8169, "t30": 2.28, "omo": 1.4, "cdb10": 1.981}, {"d": "20260130", "t10": 1.8104, "t30": 2.288, "omo": 1.4, "cdb10": 1.981}, {"d": "20260202", "t10": 1.8197, "t30": 2.281, "omo": 1.4, "cdb10": 1.9794}, {"d": "20260203", "t10": 1.817, "t30": 2.281, "omo": 1.4, "cdb10": 1.9845}, {"d": "20260204", "t10": 1.8182, "t30": 2.283, "omo": 1.4, "cdb10": 1.9879}, {"d": "20260205", "t10": 1.8168, "t30": 2.2725, "omo": 1.4, "cdb10": 1.9843}, {"d": "20260206", "t10": 1.8104, "t30": 2.248, "omo": 1.4, "cdb10": 1.9675}, {"d": "20260209", "t10": 1.8102, "t30": 2.248, "omo": 1.4, "cdb10": 1.9466}, {"d": "20260210", "t10": 1.8094, "t30": 2.247, "omo": 1.4, "cdb10": 1.953}, {"d": "20260211", "t10": 1.8002, "t30": 2.2452, "omo": 1.4, "cdb10": 1.952}, {"d": "20260212", "t10": 1.7894, "t30": 2.246, "omo": 1.4, "cdb10": 1.9435}, {"d": "20260213", "t10": 1.7933, "t30": 2.244, "omo": 1.4, "cdb10": 1.9425}, {"d": "20260214", "t10": 1.7931, "t30": 2.244, "omo": 1.4, "cdb10": 1.9435}, {"d": "20260224", "t10": 1.7894, "t30": 2.2425, "omo": 1.4, "cdb10": 1.944}, {"d": "20260225", "t10": 1.8159, "t30": 2.2551, "omo": 1.4, "cdb10": 1.9593}, {"d": "20260226", "t10": 1.8288, "t30": 2.295, "omo": 1.4, "cdb10": 1.9804}, {"d": "20260227", "t10": 1.785, "t30": 2.2875, "omo": 1.4, "cdb10": 1.9767}, {"d": "20260228", "t10": 1.7752, "t30": 2.2726, "omo": 1.4, "cdb10": 1.9668}, {"d": "20260302", "t10": 1.7758, "t30": 2.2686, "omo": 1.4, "cdb10": 1.9632}, {"d": "20260303", "t10": 1.7806, "t30": 2.2826, "omo": 1.4, "cdb10": 1.9652}, {"d": "20260304", "t10": 1.7767, "t30": 2.2752, "omo": 1.4, "cdb10": 1.9601}, {"d": "20260305", "t10": 1.7778, "t30": 2.2727, "omo": 1.4, "cdb10": 1.9609}, {"d": "20260306", "t10": 1.7809, "t30": 2.2802, "omo": 1.4, "cdb10": 1.9586}, {"d": "20260309", "t10": 1.805, "t30": 2.3292, "omo": 1.4, "cdb10": 1.9825}, {"d": "20260310", "t10": 1.8024, "t30": 2.3327, "omo": 1.4, "cdb10": 1.9716}, {"d": "20260311", "t10": 1.8075, "t30": 2.3483, "omo": 1.4, "cdb10": 1.9693}, {"d": "20260312", "t10": 1.805, "t30": 2.3403, "omo": 1.4, "cdb10": 1.9667}, {"d": "20260313", "t10": 1.8142, "t30": 2.3654, "omo": 1.4, "cdb10": 1.9639}, {"d": "20260316", "t10": 1.8308, "t30": 2.393, "omo": 1.4, "cdb10": 1.976}, {"d": "20260317", "t10": 1.8297, "t30": 2.3837, "omo": 1.4, "cdb10": 1.975}, {"d": "20260318", "t10": 1.8174, "t30": 2.3606, "omo": 1.4, "cdb10": 1.9662}, {"d": "20260319", "t10": 1.825, "t30": 2.3877, "omo": 1.4, "cdb10": 1.9642}, {"d": "20260320", "t10": 1.8297, "t30": 2.388, "omo": 1.4, "cdb10": 1.9731}, {"d": "20260323", "t10": 1.8304, "t30": 2.3741, "omo": 1.4, "cdb10": 1.9762}, {"d": "20260324", "t10": 1.8276, "t30": 2.3455, "omo": 1.4, "cdb10": 1.9693}, {"d": "20260325", "t10": 1.8232, "t30": 2.3457, "omo": 1.4, "cdb10": 1.9668}, {"d": "20260326", "t10": 1.8193, "t30": 2.3487, "omo": 1.4, "cdb10": 1.9656}, {"d": "20260327", "t10": 1.8174, "t30": 2.3508, "omo": 1.4, "cdb10": 1.9649}, {"d": "20260330", "t10": 1.8057, "t30": 2.3287, "omo": 1.4, "cdb10": 1.9407}, {"d": "20260331", "t10": 1.8153, "t30": 2.3506, "omo": 1.4, "cdb10": 1.9427}, {"d": "20260401", "t10": 1.8236, "t30": 2.3661, "omo": 1.4, "cdb10": 1.9557}, {"d": "20260402", "t10": 1.8214, "t30": 2.3722, "omo": 1.4, "cdb10": 1.9542}, {"d": "20260403", "t10": 1.8195, "t30": 2.3713, "omo": 1.4, "cdb10": 1.9455}, {"d": "20260407", "t10": 1.8157, "t30": 2.3585, "omo": 1.4, "cdb10": 1.935}, {"d": "20260408", "t10": 1.8131, "t30": 2.3367, "omo": 1.4, "cdb10": 1.9206}, {"d": "20260409", "t10": 1.8196, "t30": 2.3387, "omo": 1.4, "cdb10": 1.9208}, {"d": "20260410", "t10": 1.8127, "t30": 2.3078, "omo": 1.4, "cdb10": 1.9205}, {"d": "20260413", "t10": 1.7953, "t30": 2.2815, "omo": 1.4, "cdb10": 1.8975}, {"d": "20260414", "t10": 1.7818, "t30": 2.2761, "omo": 1.4, "cdb10": 1.8751}, {"d": "20260415", "t10": 1.7804, "t30": 2.2785, "omo": 1.4, "cdb10": 1.8661}, {"d": "20260416", "t10": 1.7819, "t30": 2.2834, "omo": 1.4, "cdb10": 1.8721}, {"d": "20260417", "t10": 1.7622, "t30": 2.251, "omo": 1.4, "cdb10": 1.8456}, {"d": "20260420", "t10": 1.7622, "t30": 2.256, "omo": 1.4, "cdb10": 1.8368}, {"d": "20260421", "t10": 1.7517, "t30": 2.2381, "omo": 1.4, "cdb10": 1.8348}, {"d": "20260422", "t10": 1.738, "t30": 2.2155, "omo": 1.4, "cdb10": 1.8316}, {"d": "20260423", "t10": 1.7544, "t30": 2.2347, "omo": 1.4, "cdb10": 1.8479}, {"d": "20260424", "t10": 1.7598, "t30": 2.2488, "omo": 1.4, "cdb10": 1.8639}, {"d": "20260427", "t10": 1.7701, "t30": 2.2571, "omo": 1.4, "cdb10": 1.8819}, {"d": "20260428", "t10": 1.7652, "t30": 2.2417, "omo": 1.4, "cdb10": 1.8522}, {"d": "20260429", "t10": 1.7463, "t30": 2.241, "omo": 1.4, "cdb10": 1.8389}, {"d": "20260430", "t10": 1.7464, "t30": 2.218, "omo": 1.4, "cdb10": 1.8394}, {"d": "20260506", "t10": 1.7648, "t30": 2.2405, "omo": 1.4, "cdb10": 1.8564}, {"d": "20260507", "t10": 1.7629, "t30": 2.241, "omo": 1.4, "cdb10": 1.8483}, {"d": "20260508", "t10": 1.7646, "t30": 2.245, "omo": 1.4, "cdb10": 1.8384}, {"d": "20260509", "t10": 1.7673, "t30": 2.2485, "omo": 1.4, "cdb10": 1.8351}, {"d": "20260511", "t10": 1.762, "t30": 2.2365, "omo": 1.4, "cdb10": 1.8316}, {"d": "20260512", "t10": 1.7592, "t30": 2.233, "omo": 1.4, "cdb10": 1.8256}, {"d": "20260513", "t10": 1.7502, "t30": 2.234, "omo": 1.4, "cdb10": 1.8188}, {"d": "20260514", "t10": 1.7574, "t30": 2.24, "omo": 1.4, "cdb10": 1.8238}, {"d": "20260515", "t10": 1.7648, "t30": 2.253, "omo": 1.4, "cdb10": 1.8308}, {"d": "20260518", "t10": 1.7578, "t30": 2.246, "omo": 1.4, "cdb10": 1.8219}, {"d": "20260519", "t10": 1.7305, "t30": 2.22, "omo": 1.4, "cdb10": 1.8129}, {"d": "20260520", "t10": 1.738, "t30": 2.232, "omo": 1.4, "cdb10": 1.8102}, {"d": "20260521", "t10": 1.7447, "t30": 2.231, "omo": 1.4, "cdb10": 1.8178}, {"d": "20260522", "t10": 1.7508, "t30": 2.234, "omo": 1.4, "cdb10": 1.8208}, {"d": "20260525", "t10": 1.7469, "t30": 2.225, "omo": 1.4, "cdb10": 1.8158}, {"d": "20260526", "t10": 1.7404, "t30": 2.221, "omo": 1.4, "cdb10": 1.8148}, {"d": "20260527", "t10": 1.7215, "t30": 2.208, "omo": 1.4, "cdb10": 1.7798}, {"d": "20260528", "t10": 1.7166, "t30": 2.21, "omo": 1.4, "cdb10": 1.7625}, {"d": "20260529", "t10": 1.7108, "t30": 2.207, "omo": 1.4, "cdb10": 1.7685}, {"d": "20260601", "t10": 1.702, "t30": 2.1905, "omo": 1.4, "cdb10": 1.7619}, {"d": "20260602", "t10": 1.7039, "t30": 2.192, "omo": 1.4, "cdb10": 1.762}, {"d": "20260603", "t10": 1.7125, "t30": 2.2045, "omo": null, "cdb10": 1.767}, {"d": "20260604", "t10": 1.7075, "t30": 2.191, "omo": null, "cdb10": 1.7628}, {"d": "20260605", "t10": 1.7201, "t30": 2.205, "omo": 1.4, "cdb10": 1.7718}, {"d": "20260608", "t10": 1.7272, "t30": 2.212, "omo": 1.4, "cdb10": 1.7795}, {"d": "20260609", "t10": 1.7375, "t30": 2.22, "omo": 1.4, "cdb10": 1.7895}, {"d": "20260610", "t10": 1.7466, "t30": 2.235, "omo": 1.4, "cdb10": 1.8055}, {"d": "20260611", "t10": 1.7476, "t30": 2.2372, "omo": 1.4, "cdb10": 1.8145}, {"d": "20260612", "t10": 1.7425, "t30": 2.2225, "omo": 1.4, "cdb10": 1.8005}, {"d": "20260615", "t10": 1.7435, "t30": 2.221, "omo": 1.4, "cdb10": 1.8005}, {"d": "20260616", "t10": 1.7321, "t30": 2.218, "omo": 1.4, "cdb10": 1.7815}, {"d": "20260617", "t10": 1.727, "t30": 2.2185, "omo": 1.4, "cdb10": 1.772}], "rankings": [{"name": "未知机构", "avgScore": 36.1, "count": 13}, {"name": "中信证券", "avgScore": 35.8, "count": 7}, {"name": "华创证券", "avgScore": 0.0, "count": 1}], "predictions": [{"id": "P-STRATEGY-20251222-002", "inst": "未知机构", "target": "10Y国债收益率震荡中枢", "date": "2025-12-22", "horizon": "2026全年(未降息)", "score": 96.6, "dirHit": true, "dirScore": 1.0, "magErr": 0.69, "rangeHit": true, "startVal": 1.8423, "endVal": 1.7931, "predDir": "震荡", "actDir": "下行"}, {"id": "P-CITIC-20260525-001", "inst": "中信证券", "target": "10Y国债收益率", "date": "2026-05-25", "horizon": "2026下半年", "score": 75.7, "dirHit": true, "dirScore": 1.0, "magErr": 7.3, "rangeHit": true, "startVal": 1.727, "endVal": 1.727, "predDir": "震荡", "actDir": "震荡"}, {"id": "P-CITIC-20251226-004", "inst": "中信证券", "target": "10Y国债收益率", "date": "2025-12-26", "horizon": "2026上半年", "score": 50.0, "dirHit": true, "dirScore": 1.0, "magErr": null, "rangeHit": null, "startVal": 1.8423, "endVal": 1.727, "predDir": "下行", "actDir": "下行"}, {"id": "P-CITIC-20260525-002", "inst": "中信证券", "target": "10Y国债收益率", "date": "2026-05-25", "horizon": "2026下半年", "score": 50.0, "dirHit": true, "dirScore": 1.0, "magErr": null, "rangeHit": null, "startVal": 1.727, "endVal": 1.727, "predDir": "先下后上", "actDir": "震荡"}, {"id": "P-CITIC-20260525-003", "inst": "中信证券", "target": "资金利率", "date": "2026-05-25", "horizon": "2026下半年", "score": 50.0, "dirHit": true, "dirScore": 1.0, "magErr": null, "rangeHit": null, "startVal": 1.4, "endVal": 1.4, "predDir": "回归中性", "actDir": "震荡"}, {"id": "P-UNKNOWN-20260125-003", "inst": "未知机构", "target": "3-5年证金债", "date": "2026-01-25", "horizon": "短期", "score": 50.0, "dirHit": true, "dirScore": 1.0, "magErr": null, "rangeHit": null, "startVal": 1.7969, "endVal": 1.7474, "predDir": "上行动能减弱", "actDir": "下行"}, {"id": "P-UNKNOWN-20260612-003", "inst": "未知机构", "target": "10Y国债收益率", "date": "2026-06-12", "horizon": "2026-06至2027上半年", "score": 50.0, "dirHit": true, "dirScore": 1.0, "magErr": 27.3, "rangeHit": null, "startVal": 1.702, "endVal": 1.727, "predDir": "上行", "actDir": "上行"}, {"id": "P-SUPERLONG-20260607-001", "inst": "未知机构", "target": "短端债券", "date": "2026-06-07", "horizon": "短期", "score": 50.0, "dirHit": true, "dirScore": 1.0, "magErr": null, "rangeHit": null, "startVal": 1.1775, "endVal": 1.1892, "predDir": "稳定-想象空间小", "actDir": "上行"}, {"id": "P-FIXEDINCOME-20260514-001", "inst": "未知机构", "target": "利率债", "date": "2026-05-14", "horizon": "短期", "score": 50.0, "dirHit": true, "dirScore": 1.0, "magErr": null, "rangeHit": null, "startVal": 1.7574, "endVal": 1.7425, "predDir": "区间震荡", "actDir": "下行"}, {"id": "P-STRATEGY-20251222-001", "inst": "未知机构", "target": "10Y国债收益率", "date": "2025-12-22", "horizon": "2026全年", "score": 42.3, "dirHit": false, "dirScore": 0.0, "magErr": 7.3, "rangeHit": true, "startVal": 1.8423, "endVal": 1.727, "predDir": "震荡", "actDir": "下行"}, {"id": "P-UNKNOWN-20260612-004", "inst": "未知机构", "target": "10Y国债收益率", "date": "2026-06-12", "horizon": "短期", "score": 40.0, "dirHit": true, "dirScore": 0.8, "magErr": 17.3, "rangeHit": null, "startVal": 1.7425, "endVal": 1.727, "predDir": "顶部", "actDir": "下行"}, {"id": "P-STRATEGY-20251222-003", "inst": "未知机构", "target": "10Y国债收益率震荡中枢", "date": "2025-12-22", "horizon": "2026全年(降息后)", "score": 38.8, "dirHit": true, "dirScore": 1.0, "magErr": 9.31, "rangeHit": false, "startVal": 1.8423, "endVal": 1.7931, "predDir": "下行", "actDir": "下行"}, {"id": "P-UNKNOWN-20260125-001", "inst": "未知机构", "target": "10Y国债收益率", "date": "2026-01-25", "horizon": "2026Q1", "score": 27.2, "dirHit": true, "dirScore": 0.8, "magErr": 10.97, "rangeHit": false, "startVal": 1.8423, "endVal": 1.8153, "predDir": "顶部", "actDir": "下行"}, {"id": "P-SUPERLONG-20260607-003", "inst": "未知机构", "target": "30-10Y利差", "date": "2026-06-07", "horizon": "2026下半年", "score": 25.0, "dirHit": null, "dirScore": 0.5, "magErr": 25.5, "rangeHit": null, "startVal": 0.045, "endVal": 0.045, "predDir": "收窄", "actDir": "震荡"}, {"id": "P-CITIC-20251226-001", "inst": "中信证券", "target": "10Y国债收益率", "date": "2025-12-26", "horizon": "2026全年", "score": 24.6, "dirHit": false, "dirScore": 0.0, "magErr": 7.7, "rangeHit": false, "startVal": 1.8423, "endVal": 1.727, "predDir": "先下后上", "actDir": "下行"}, {"id": "P-CITIC-20251226-003", "inst": "中信证券", "target": "10Y国债收益率波动幅度", "date": "2025-12-26", "horizon": "2026全年", "score": 0.0, "dirHit": false, "dirScore": 0.0, "magErr": 142.7, "rangeHit": null, "startVal": 1.8423, "endVal": 1.727, "predDir": "震荡", "actDir": "下行"}, {"id": "P-CITIC-20251226-005", "inst": "中信证券", "target": "10Y国债收益率", "date": "2025-12-26", "horizon": "2026下半年", "score": 0.0, "dirHit": false, "dirScore": 0.0, "magErr": null, "rangeHit": null, "startVal": 1.727, "endVal": 1.727, "predDir": "上行", "actDir": "震荡"}, {"id": "P-UNKNOWN-20260612-001", "inst": "未知机构", "target": "长期国债收益率", "date": "2026-06-12", "horizon": "2026下半年", "score": 0.0, "dirHit": false, "dirScore": 0.0, "magErr": null, "rangeHit": null, "startVal": 2.2185, "endVal": 2.2185, "predDir": "上行", "actDir": "震荡"}, {"id": "P-UNKNOWN-20260612-002", "inst": "未知机构", "target": "10Y国债收益率", "date": "2026-06-12", "horizon": "2026下半年", "score": 0.0, "dirHit": false, "dirScore": 0.0, "magErr": 12.3, "rangeHit": null, "startVal": 1.727, "endVal": 1.727, "predDir": "上行", "actDir": "震荡"}, {"id": "P-SUPERLONG-20260607-002", "inst": "未知机构", "target": "30Y国债利率", "date": "2026-06-07", "horizon": "2026下半年", "score": 0.0, "dirHit": false, "dirScore": 0.0, "magErr": 21.85, "rangeHit": null, "startVal": 2.2185, "endVal": 2.2185, "predDir": "下行", "actDir": "震荡"}, {"id": "P-HC-20260506-001", "inst": "华创证券", "target": "利率债", "date": "2026-05-06", "horizon": "2026年1-4月", "score": 0.0, "dirHit": false, "dirScore": 0.0, "magErr": null, "rangeHit": null, "startVal": 1.8423, "endVal": 1.7464, "predDir": "震荡", "actDir": "下行"}], "citicSummary": [{"date": "2025-12-26", "target": "10Y国债收益率", "direction": "先下后上", "rangeLow": 1.5, "rangeHigh": 1.8, "midpoint": 1.65, "confidence": "high", "rawText": "我们判断2026年收益率中枢或下移10bps，同时维持30bps左右的震荡空间"}, {"date": "2025-12-26", "target": "政策利率", "direction": "下行", "rangeLow": null, "rangeHigh": null, "midpoint": 0.1, "confidence": "high", "rawText": "预计政策利率仍有10bps左右的调降空间"}, {"date": "2025-12-26", "target": "10Y国债收益率波动幅度", "direction": "震荡", "rangeLow": null, "rangeHigh": null, "midpoint": 0.3, "confidence": "medium", "rawText": "预计10年期国债收益率仍将保持约30bps的波动区间"}, {"date": "2025-12-26", "target": "10Y国债收益率", "direction": "下行", "rangeLow": null, "rangeHigh": null, "midpoint": null, "confidence": "medium", "rawText": "年初至上半年，降准降息前置落地有望推动利率下行"}, {"date": "2025-12-26", "target": "10Y国债收益率", "direction": "上行", "rangeLow": null, "rangeHigh": null, "midpoint": null, "confidence": "medium", "rawText": "年中以后，随着通胀回升对名义增速形成支撑，以及地方化债逐步收尾、信用扩张条件改善，利率存在阶段性上行压力"}, {"date": "2026-05-25", "target": "10Y国债收益率", "direction": "震荡", "rangeLow": 1.7, "rangeHigh": 1.9, "midpoint": 1.8, "confidence": "high", "rawText": "下半年10年期国债到期收益率预计维持在1.7%~1.9%区间运行"}, {"date": "2026-05-25", "target": "10Y国债收益率", "direction": "先下后上", "rangeLow": null, "rangeHigh": null, "midpoint": null, "confidence": "medium", "rawText": "下半年10年期国债到期收益率...或呈现先下后上走势"}, {"date": "2026-05-25", "target": "资金利率", "direction": "回归中性", "rangeLow": null, "rangeHigh": null, "midpoint": null, "confidence": "medium", "rawText": "央行回笼中长期流动性引导资金利率回归政策利率附近运行"}, {"date": "2026-05-25", "target": "降准降息", "direction": "必要性不高", "rangeLow": null, "rangeHigh": null, "midpoint": null, "confidence": "medium", "rawText": "下半年降准降息必要性都不高，总量操作时点较往年进一步后移"}], "stats": {"totalPredictions": 28, "scoredPredictions": 21, "totalReports": 17, "tradingDays": 113, "avgScore": 34.3, "institutionCount": 3}};
+let sortKey='score', sortDir=-1;
+
+function init() {
+  renderStats();
+  renderRanking();
+  renderOverviewChart();
+  renderScoreDist();
+  renderPredictions();
+  renderMarketChart();
+  renderFramework();
+  renderCiticPreds();
+
+  // Tabs
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab, .tab-content').forEach(el => el.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-'+tab.dataset.tab).classList.add('active');
+      // Resize charts after layout
+      setTimeout(() => {
+        [overviewChart, marketChart, scoreDistChart].forEach(c => c && c.resize && c.resize());
+      }, 50);
+    });
+  });
+}
+
+// ── Stats ──
+function renderStats() {
+  const s = DATA.stats;
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card"><div class="num blue">${s.scoredPredictions}/${s.totalPredictions}</div><div class="label">预测评分</div></div>
+    <div class="stat-card"><div class="num green">${s.institutionCount}</div><div class="label">机构数</div></div>
+    <div class="stat-card"><div class="num gold">${s.avgScore}</div><div class="label">平均分 /100</div></div>
+    <div class="stat-card"><div class="num blue">${s.totalReports}</div><div class="label">研报数</div></div>
+    <div class="stat-card"><div class="num">${s.tradingDays}</div><div class="label">交易日</div></div>
+  `;
+}
+
+// ── Ranking ──
+function renderRanking() {
+  const el = document.getElementById('rankingList');
+  const max = Math.max(...DATA.rankings.map(r=>r.avgScore));
+  el.innerHTML = DATA.rankings.map((r,i) => {
+    const medal = ['gold','silver','bronze'][i]||'';
+    const fill = r.avgScore / max * 100;
+    const colors = ['#ffd700','#c0c0c0','#cd7f32','#58a6ff','#8b949e'];
+    const color = colors[i]||colors[4];
+    return `<div class="rank-item">
+      <div class="rank-num ${medal}">${i+1}</div>
+      <div class="rank-info">
+        <div class="name">${r.name}</div>
+        <div class="detail">${r.count} 条预测</div>
+        <div class="rank-bar"><div class="rank-bar-fill" style="width:${fill}%;background:${color}"></div></div>
+      </div>
+      <div class="rank-score" style="color:${color}">${r.avgScore}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Overview Chart (10Y + 30Y) ──
+let overviewChart;
+function renderOverviewChart() {
+  const el = document.getElementById('overviewChart');
+  overviewChart = echarts.init(el);
+  const dates = DATA.timeSeries.map(d=>d.d);
+  const t10 = DATA.timeSeries.map(d=>d.t10);
+  const t30 = DATA.timeSeries.map(d=>d.t30);
+  overviewChart.setOption({
+    tooltip: {trigger:'axis',valueFormatter:v=>v+'%'},
+    legend: {data:['10Y国债','30Y国债'],textStyle:{color:'#8b949e'},bottom:0},
+    grid:{top:10,right:20,bottom:40,left:40},
+    xAxis:{type:'category',data:dates,axisLabel:{fontSize:10,color:'#8b949e'}},
+    yAxis:{type:'value',axisLabel:{formatter:'{value}%',fontSize:10,color:'#8b949e'},splitLine:{lineStyle:{color:'#21262d'}}},
+    series:[
+      {name:'10Y国债',type:'line',data:t10,smooth:true,lineStyle:{width:2,color:'#58a6ff'},areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(88,166,255,.2)'},{offset:1,color:'rgba(88,166,255,0)']}}}},
+      {name:'30Y国债',type:'line',data:t30,smooth:true,lineStyle:{width:2,color:'#d29922'}},
+    ]
+  });
+}
+
+// ── Score Distribution ──
+let scoreDistChart;
+function renderScoreDist() {
+  const el = document.getElementById('scoreDistChart');
+  scoreDistChart = echarts.init(el);
+  const bins = [0,20,40,60,80,100];
+  const counts = bins.map((b,i)=>DATA.predictions.filter(p=>p.score>=b && (i===bins.length-1 || p.score<bins[i+1])).length);
+  scoreDistChart.setOption({
+    tooltip:{trigger:'axis'},
+    grid:{top:10,right:20,bottom:30,left:40},
+    xAxis:{type:'category',data:['0-20','20-40','40-60','60-80','80-100'],axisLabel:{color:'#8b949e'}},
+    yAxis:{type:'value',splitLine:{lineStyle:{color:'#21262d'}}},
+    series:[{type:'bar',data:counts,itemStyle:{color:{type:'linear',x:0,y:0,x:1,y:0,colorStops:[{offset:0,color:'#f85149'},{offset:.5,color:'#d29922'},{offset:1,color:'#3fb950'}]}},barWidth:'60%'}]
+  });
+}
+
+// ── Predictions Table ──
+let predSortKey='score',predSortDir=-1;
+function sortPreds(k) {
+  if(predSortKey===k) predSortDir*=-1; else { predSortKey=k; predSortDir=-1; }
+  renderPredictions();
+  document.querySelectorAll('.pred-table th').forEach(th=>th.textContent=th.textContent.replace(/[▾▴]/g,'').trim());
+  const arrow = predSortDir===-1?'▾':'▴';
+  const th = document.querySelector(`.pred-table th[data-sort="${k}"]`);
+  if(th) th.textContent = th.textContent + ' ' + arrow;
+}
+function renderPredictions() {
+  const fi = document.getElementById('filterInst').value;
+  const fr = document.getElementById('filterResult').value;
+  const fs = document.getElementById('filterSearch').value.toLowerCase();
+  let list = DATA.predictions.filter(p => {
+    if(fi && p.inst!==fi) return false;
+    if(fr==='hit' && !p.dirHit) return false;
+    if(fr==='miss' && p.dirHit!==false) return false;
+    if(fs && !p.target.toLowerCase().includes(fs) && !p.inst.toLowerCase().includes(fs)) return false;
+    return true;
+  });
+  list.sort((a,b)=>predSortDir*(a[predSortKey]<b[predSortKey]?-1:1));
+  const body = document.getElementById('predBody');
+  body.innerHTML = list.map(p => {
+    const dirTag = p.dirHit===true?'<span class="tag tag-ok">命中</span>':p.dirHit===false?'<span class="tag tag-fail">未中</span>':'<span class="tag tag-pending">待验</span>';
+    const rangeTag = p.rangeHit===true?'<span class="tag tag-ok">命中</span>':p.rangeHit===false?'<span class="tag tag-fail">未中</span>':'-';
+    const err = p.magErr!==null?p.magErr+'bp':'-';
+    return `<tr onclick="showDetail('${p.id}')" style="cursor:pointer">
+      <td><strong>${p.score}</strong></td>
+      <td>${p.date}</td>
+      <td>${p.inst}</td>
+      <td>${p.target}</td>
+      <td>${p.horizon}</td>
+      <td>${dirTag}</td>
+      <td>${err}</td>
+      <td>${rangeTag}</td>
+      <td>→</td>
+    </tr>`;
+  }).join('');
+  // Populate filter
+  const sel = document.getElementById('filterInst');
+  const insts = [...new Set(DATA.predictions.map(p=>p.inst))];
+  sel.innerHTML = '<option value="">全部机构</option>'+insts.map(i=>`<option value="${i}"${i===fi?' selected':''}>${i}</option>`).join('');
+}
+function showDetail(id) {
+  const p = DATA.predictions.find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('modalTitle').textContent = p.target + ' · ' + p.inst;
+  document.getElementById('modalBody').innerHTML = `
+    <div class="field"><span>评分</span><span class="val">${p.score}/100</span></div>
+    <div class="field"><span>预测方向</span><span class="val">${p.predDir}</span></div>
+    <div class="field"><span>实际方向</span><span class="val">${p.actDir||'-'}</span></div>
+    <div class="field"><span>方向命中</span><span class="val">${p.dirHit===true?'✅ 是':p.dirHit===false?'❌ 否':'⏳ 待验证'}</span></div>
+    <div class="field"><span>起始值</span><span class="val">${p.startVal!==null?p.startVal+'%':'-'}</span></div>
+    <div class="field"><span>结束值</span><span class="val">${p.endVal!==null?p.endVal+'%':'-'}</span></div>
+    ${p.magErr!==null?`<div class="field"><span>幅度误差</span><span class="val">${p.magErr}bp</span></div>`:''}
+    ${p.rangeHit!==null?`<div class="field"><span>区间命中</span><span class="val">${p.rangeHit?'✅ 是':'❌ 否'}</span></div>`:''}
+    <div class="field"><span>时间窗口</span><span class="val">${p.horizon}</span></div>
+    <div class="field"><span>机构</span><span class="val">${p.inst}</span></div>
+  `;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function closeModal(e) { if(!e || e.target===document.getElementById('modalOverlay')) document.getElementById('modalOverlay').classList.remove('show'); }
+
+// ── Market Chart ──
+let marketChart;
+function renderMarketChart() {
+  const el = document.getElementById('marketChart');
+  marketChart = echarts.init(el);
+  const dates = DATA.timeSeries.map(d=>d.d);
+  marketChart.setOption({
+    tooltip:{trigger:'axis',valueFormatter:v=>v+'%'},
+    legend:{data:['10Y国债','30Y国债','OMO 7D','CDB 10Y'],textStyle:{color:'#8b949e'},bottom:0},
+    grid:{top:10,right:20,bottom:40,left:40},
+    xAxis:{type:'category',data:dates,axisLabel:{fontSize:10,color:'#8b949e'}},
+    yAxis:{type:'value',axisLabel:{formatter:'{value}%',fontSize:10,color:'#8b949e'},splitLine:{lineStyle:{color:'#21262d'}}},
+    series:[
+      {name:'10Y国债',type:'line',data:DATA.timeSeries.map(d=>d.t10),smooth:true,lineStyle:{width:2,color:'#58a6ff'}},
+      {name:'30Y国债',type:'line',data:DATA.timeSeries.map(d=>d.t30),smooth:true,lineStyle:{width:2,color:'#d29922'}},
+      {name:'OMO 7D',type:'line',data:DATA.timeSeries.map(d=>d.omo),step:'end',lineStyle:{width:1,color:'#3fb950',type:'dashed'}},
+      {name:'CDB 10Y',type:'line',data:DATA.timeSeries.map(d=>d.cdb10),smooth:true,lineStyle:{width:1,color:'#f0883e'}},
+    ]
+  });
+}
+
+// ── Framework Diagram ──
+function renderFramework() {
+  const layers = [
+    {title:'宏观基本面',desc:'内需弱+外需高景气 → 结构性复苏 · 经济增速波动性小',items:'GDP增速、社融、出口、CPI、PPI'},
+    {title:'货币政策取向',desc:'OMO 7D 1.40% 为锚 + 利差中枢 50bp → 10Y中性利率 1.90%',items:'降准降息节奏、MLF、央行国债操作'},
+    {title:'资金面与机构行为',desc:'存款搬家链条：出口结汇→存款活化→银行配置→利率顶部约束',items:'DR001/DR007、基金久期、配置盘力度'},
+    {title:'供给与技术面',desc:'政府债发行节奏 + 技术面信号（换手率/股债比价）',items:'超长债供给、30Y换手率、股债性价比'},
+    {title:'策略输出',desc:'利率区间 + 久期建议 + 品种选择',items:'目标区间1.7-1.9%、哑铃型/均衡型结构'},
+  ];
+  document.getElementById('frameworkDiagram').innerHTML = layers.map((l,i) => `
+    <div class="fw-layer">
+      <div class="fw-label">L${i+1}</div>
+      <div class="fw-content">
+        <div class="title">${l.title}</div>
+        <div class="desc">${l.desc}</div>
+        <div class="desc" style="color:var(--accent);font-size:11px;margin-top:4px">${l.items}</div>
+      </div>
+    </div>
+    ${i<layers.length-1?'<div class="fw-arrow">↓</div>':''}
+  `).join('');
+}
+
+// ── CITIC Predictions ──
+function renderCiticPreds() {
+  document.getElementById('citicPredList').innerHTML = DATA.citicSummary.map(p => {
+    const rng = p.rangeLow!==null?` <span style="color:var(--accent)">[${p.rangeLow}-${p.rangeHigh}%]</span>`:'';
+    const clr = p.confidence==='high'?'var(--green)':p.confidence==='medium'?'var(--orange)':'var(--muted)';
+    return `<div style="padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:600">${p.date}</span>
+        <span class="tag" style="background:${clr}22;color:${clr}">${p.confidence}</span>
+      </div>
+      <div style="margin-top:4px;font-size:14px">${p.target}: ${p.direction}${rng}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">"${p.rawText}"</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Export ──
+function exportCSV() {
+  const rows = [['机构','预测标的','时间窗','综合分','方向命中','幅度误差bp','区间命中','起始值%','结束值%']];
+  DATA.predictions.forEach(p => rows.push([p.inst,p.target,p.horizon,p.score,p.dirHit?'是':'否',p.magErr!==null?p.magErr:'',p.rangeHit?'是':'-',p.startVal!==null?p.startVal:'',p.endVal!==null?p.endVal:'']));
+  downloadCSV(rows,'研报天团_评分数据.csv');
+}
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(DATA.predictions,null,2)],{type:'application/json'});
+  downloadBlob(blob,'研报天团_评分数据.json');
+}
+function exportChartData() {
+  const rows = [['日期','10Y国债%','30Y国债%','OMO 7D%','CDB 10Y%']];
+  DATA.timeSeries.forEach(d => rows.push([d.d,d.t10,d.t30||'',d.omo||'',d.cdb10||'']));
+  downloadCSV(rows,'研报天团_行情数据.csv');
+}
+function downloadCSV(rows,name) {
+  const csv = rows.map(r=>r.map(v=>typeof v==='string'&&v.includes(',')?'"'+v+'"':v).join(',')).join('\n');
+  downloadBlob(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}),name);
+}
+function downloadBlob(blob,name) {
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); URL.revokeObjectURL(a.href);
+}
+
+init();
+</script>
+</body>
+</html>
