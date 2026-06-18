@@ -5,363 +5,296 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>研报天团 · 评价看板</title>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
-<script src="data_compact.js"></script>
+<script src="dash_data.js"></script>
 <style>
-:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--green:#3fb950;--red:#f85149;--orange:#d29922;--gold:#ffd700}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif;background:#f5f7fb;color:#1a2332;line-height:1.6}
 .container{max-width:1400px;margin:0 auto;padding:20px}
-.header{display:flex;align-items:center;padding:20px 0;border-bottom:1px solid var(--border);margin-bottom:24px}
-.header h1{font-size:22px}.header .badge{background:var(--accent);color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;margin-left:10px}
-.header .sub{color:var(--muted);font-size:13px;margin-left:auto}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:20px}
-.stat-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px}
-.stat-card .num{font-size:28px;font-weight:700}
-.stat-card .label{font-size:12px;color:var(--muted);margin-top:2px}
-.tabs{display:flex;gap:2px;margin-bottom:16px;border-bottom:1px solid var(--border)}
-.tab{padding:10px 20px;cursor:pointer;color:var(--muted);font-size:14px;border-bottom:2px solid transparent}
-.tab:hover{color:var(--text)}.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.header{display:flex;align-items:center;padding:24px 0 20px;margin-bottom:24px}
+.header h1{font-size:24px;font-weight:700;background:linear-gradient(135deg,#1a73e8,#0d47a1);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header .badge{background:#1a73e8;color:#fff;padding:2px 12px;border-radius:12px;font-size:12px;margin-left:12px}
+.header .sub{color:#6b7a8f;font-size:14px;margin-left:auto;font-weight:500}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px}
+.stat-card{background:#fff;border:1px solid #e8ecf1;border-radius:12px;padding:18px 20px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.stat-card .num{font-size:28px;font-weight:700;color:#1a73e8}
+.stat-card .label{font-size:13px;color:#6b7a8f;margin-top:2px}
+.stat-card .num.gold{color:#f59e0b}
+.tabs{display:flex;gap:2px;margin-bottom:20px;background:#fff;border-radius:10px;padding:4px;border:1px solid #e8ecf1}
+.tab{padding:10px 24px;cursor:pointer;color:#6b7a8f;font-size:14px;font-weight:500;border-radius:8px;transition:all .2s}
+.tab:hover{color:#1a73e8;background:#f0f4ff}
+.tab.active{color:#fff;background:linear-gradient(135deg,#1a73e8,#0d47a1)}
 .page{display:none}.page.active{display:block}
-.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px}
-.card h3{font-size:15px;font-weight:600;margin-bottom:12px}
+.card{background:#fff;border:1px solid #e8ecf1;border-radius:12px;padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card h3{font-size:16px;font-weight:600;color:#1a2332;margin-bottom:16px;display:flex;align-items:center;gap:8px}
 .chart-box{width:100%;height:380px}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:900px){.row{grid-template-columns:1fr}}
-.rank-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.col2{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:900px){.col2{grid-template-columns:1fr}}
+.rank-item{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #f0f2f5}
 .rank-item:last-child{border-bottom:none}
-.rank-num{width:28px;height:28px;border-radius:50%;background:#1f2937;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
-.rank-info{flex:1}.rank-info .name{font-weight:600}.rank-info .detail{font-size:12px;color:var(--muted)}
-.rank-score{font-size:20px;font-weight:700}
-.rank-bar{height:6px;background:#1f2937;border-radius:3px;margin-top:4px}
-.rank-bar-fill{height:100%;border-radius:3px}
+.rank-num{width:30px;height:30px;border-radius:50%;background:#f0f2f5;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#1a2332}
+.rank-num.r1{background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff}
+.rank-num.r2{background:linear-gradient(135deg,#94a3b8,#64748b);color:#fff}
+.rank-num.r3{background:linear-gradient(135deg,#d97706,#92400e);color:#fff}
+.rank-info{flex:1}
+.rank-info .name{font-weight:600;font-size:14px}
+.rank-info .detail{font-size:12px;color:#94a3b8}
+.rank-bar{height:6px;background:#f0f2f5;border-radius:3px;margin-top:6px}
+.rank-bar-fill{height:100%;border-radius:3px;transition:width .6s}
+.rank-score{font-size:20px;font-weight:700;color:#1a73e8}
+.consensus-box{background:linear-gradient(135deg,#eff6ff,#dbeafe);border:2px solid #93c5fd;border-radius:12px;padding:24px;margin-bottom:16px}
+.consensus-box .title{font-size:18px;font-weight:700;color:#1e40af;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.consensus-box .range{font-size:36px;font-weight:700;color:#1a73e8;margin:8px 0}
+.consensus-box .range span{font-size:16px;font-weight:400;color:#6b7a8f}
+.consensus-box .meta{display:flex;gap:24px;margin-top:12px;flex-wrap:wrap}
+.consensus-box .meta-item{display:flex;align-items:center;gap:6px;font-size:13px;color:#475569}
+.consensus-box .meta-item .tag{display:inline-block;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:500}
+.tag-green{background:#dcfce7;color:#16a34a}
+.tag-yellow{background:#fef3c7;color:#d97706}
+.tag-blue{background:#dbeafe;color:#1a73e8}
+.inst-view{display:flex;gap:16px;padding:16px;background:#f8fafc;border-radius:10px;margin-bottom:12px;align-items:flex-start}
+.inst-view .avatar{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:#fff;flex-shrink:0;background:linear-gradient(135deg,#1a73e8,#0d47a1)}
+.inst-view .body{flex:1}
+.inst-view .body .inst-name{font-weight:600;font-size:14px}
+.inst-view .body .inst-weight{font-size:12px;color:#94a3b8}
+.inst-view .body .inst-view-text{font-size:14px;margin-top:4px}
+.inst-view .body .inst-source{font-size:12px;color:#94a3b8;margin-top:4px}
 table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;padding:8px 10px;color:var(--muted);border-bottom:1px solid var(--border);font-weight:500;cursor:pointer;white-space:nowrap}
-th:hover{color:var(--text)}
-td{padding:8px 10px;border-bottom:1px solid var(--border)}
-tr:hover{background:rgba(88,166,255,.05);cursor:pointer}
-.tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px}
-.tag-yes{background:rgba(63,185,80,.15);color:var(--green)}
-.tag-no{background:rgba(248,81,73,.15);color:var(--red)}
-.tag-na{background:rgba(139,148,158,.15);color:var(--muted)}
-.filter-bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
-.filter-bar select,.filter-bar input{background:#1f2937;border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:13px}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;border:none;font-size:13px;cursor:pointer;font-weight:500}
-.btn-primary{background:var(--accent);color:#fff}.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
-.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
-.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+th{text-align:left;padding:10px 12px;color:#6b7a8f;border-bottom:2px solid #e8ecf1;font-weight:600;cursor:pointer;white-space:nowrap;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+th:hover{color:#1a73e8}
+td{padding:10px 12px;border-bottom:1px solid #f0f2f5}
+tr:hover{background:#f8fafc;cursor:pointer}
+.filter-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filter-bar select,.filter-bar input{background:#fff;border:1px solid #e2e8f0;color:#1a2332;padding:8px 14px;border-radius:8px;font-size:13px;outline:none}
+.filter-bar select:focus,.filter-bar input:focus{border-color:#1a73e8}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:none;font-size:13px;cursor:pointer;font-weight:500;transition:all .2s}
+.btn-primary{background:#1a73e8;color:#fff}
+.btn-primary:hover{background:#1557b0}
+.btn-outline{background:#fff;border:1px solid #e2e8f0;color:#475569}
+.btn-outline:hover{border-color:#1a73e8;color:#1a73e8}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .section-header h3{margin-bottom:0}
 .fw-layer{display:flex;align-items:stretch;gap:10px;margin-bottom:6px}
-.fw-label{width:36px;background:var(--accent);color:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
-.fw-content{flex:1;background:#1f2937;border-radius:6px;padding:10px 14px}
-.fw-content .t{font-weight:600;font-size:14px}
-.fw-content .d{font-size:12px;color:var(--muted)}
-.fw-arrow{text-align:center;color:var(--muted);font-size:14px;line-height:1;margin:2px 0}
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center}
-.modal.show{display:flex}
-.modal-box{background:var(--card);border:1px solid var(--border);border-radius:12px;width:90%;max-width:500px;max-height:75vh;overflow:auto;padding:24px}
-.modal-box h3{margin-bottom:16px}
-.modal-close{float:right;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer}
-.modal-close:hover{color:var(--text)}
-.mf{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
-.mf .v{font-weight:500;text-align:right}
-.pred-item{padding:8px 0;border-bottom:1px solid var(--border)}
+.fw-label{width:36px;background:linear-gradient(135deg,#1a73e8,#0d47a1);color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+.fw-content{flex:1;background:#f8fafc;border-radius:8px;padding:12px 16px}
+.fw-content .t{font-weight:600;font-size:14px;color:#1a2332}
+.fw-content .d{font-size:12px;color:#6b7a8f}
+.fw-arrow{text-align:center;color:#94a3b8;font-size:14px;line-height:1;margin:2px 0}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:16px;width:90%;max-width:520px;max-height:80vh;overflow:auto;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.modal h3{margin-bottom:16px;color:#1a2332;font-size:18px}
+.modal .close{float:right;background:none;border:none;font-size:24px;color:#94a3b8;cursor:pointer}
+.modal .close:hover{color:#1a2332}
+.mf{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f2f5;font-size:13px}
+.mf .v{font-weight:600;text-align:right;color:#1a2332}
+.pred-item{padding:10px 0;border-bottom:1px solid #f0f2f5}
 .pred-item:last-child{border-bottom:none}
-.pred-item .pd{font-size:12px;color:var(--muted)}
+.pred-item .pd{font-size:12px;color:#94a3b8;margin-top:2px}
+.tag{display:inline-block;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:500}
+.tag-ok{background:#dcfce7;color:#16a34a}
+.tag-fail{background:#fee2e2;color:#dc2626}
+.tag-na{background:#f1f5f9;color:#94a3b8}
+.text-muted{color:#94a3b8;font-size:13px}
+.mb-12{margin-bottom:12px}
 </style>
 </head>
-<body><div class="container" id="app">
+<body>
 
-<div class="header">
-  <h1>研报天团 · 评价看板</h1>
-  <span class="badge">MVP</span>
-  <span class="sub">机构 Skill 蒸馏 · 预测评分 · 可溯源</span>
-</div>
-
-<div class="grid" id="statsBar"></div>
-
-<div class="tabs">
-  <div class="tab active" data-tab="overview" onclick="switchTab('overview')">全景概览</div>
-  <div class="tab" data-tab="preds" onclick="switchTab('preds')">预测评分</div>
-  <div class="tab" data-tab="market" onclick="switchTab('market')">行情走势</div>
-  <div class="tab" data-tab="framework" onclick="switchTab('framework')">中信框架</div>
-</div>
-
-<div class="page active" id="page-overview">
-  <div class="row">
-    <div class="card"><h3>机构排名</h3><div id="rankList"></div></div>
-    <div class="card"><h3>10Y 国债收益率走势</h3><div class="chart-box" id="chartOverview"></div></div>
+<div class="container">
+  <div class="header">
+    <h1>研报天团 · 评价看板</h1>
+    <span class="badge">v0.3</span>
+    <span class="sub">机构 Skill 蒸馏 · 预测评分 · 共识问答</span>
   </div>
-  <div class="card"><h3>评分分布</h3><div class="chart-box" id="chartDist"></div></div>
-</div>
 
-<div class="page" id="page-preds">
-  <div class="card">
-    <div class="section-header">
-      <h3>预测评分明细</h3>
-      <div>
-        <button class="btn btn-outline" onclick="exportCSV()">CSV</button>
-        <button class="btn btn-outline" onclick="exportJSON()">JSON</button>
+  <div class="row" id="statsBar"></div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="consensus" onclick="switchTab('consensus')">天团共识</div>
+    <div class="tab" data-tab="overview" onclick="switchTab('overview')">全景概览</div>
+    <div class="tab" data-tab="predictions" onclick="switchTab('predictions')">预测评分</div>
+    <div class="tab" data-tab="market" onclick="switchTab('market')">行情走势</div>
+    <div class="tab" data-tab="framework" onclick="switchTab('framework')">中信框架</div>
+  </div>
+
+  <!-- Consensus -->
+  <div class="page active" id="page-consensus">
+    <div class="consensus-box" id="consensusBox"></div>
+    <div class="card"><h3>各机构观点详情</h3><div id="institutionViews"></div></div>
+    <div class="card"><h3>关键驱动因素</h3><div class="chart-box" id="chartDrivers"></div></div>
+  </div>
+
+  <!-- Overview -->
+  <div class="page" id="page-overview">
+    <div class="col2">
+      <div class="card"><h3>机构排名</h3><div id="rankList"></div></div>
+      <div class="card"><h3>10Y 国债走势</h3><div class="chart-box" id="chartOverview"></div></div>
+    </div>
+    <div class="card"><h3>评分分布</h3><div class="chart-box" id="chartDist"></div></div>
+  </div>
+
+  <!-- Predictions -->
+  <div class="page" id="page-predictions">
+    <div class="card">
+      <div class="section-header">
+        <h3>预测评分明细</h3>
+        <div><button class="btn btn-outline" onclick="exportCSV()">CSV</button><button class="btn btn-outline" onclick="exportJSON()" style="margin-left:8px">JSON</button></div>
+      </div>
+      <div class="filter-bar">
+        <select id="fInst" onchange="renderTable()"></select>
+        <select id="fHit" onchange="renderTable()"><option value="">全部</option><option value="hit">方向命中</option><option value="miss">方向未中</option></select>
+        <input id="fSearch" placeholder="搜索..." oninput="renderTable()" style="flex:1;min-width:120px">
+      </div>
+      <div style="overflow-x:auto">
+        <table><thead><tr>
+          <th onclick="sortBy('score')" id="sh-score">综合分</th>
+          <th onclick="sortBy('date')" id="sh-date">日期</th>
+          <th onclick="sortBy('inst')" id="sh-inst">机构</th>
+          <th onclick="sortBy('target')" id="sh-target">标的</th>
+          <th>时间窗</th><th>方向</th><th>幅度误差</th><th>区间</th>
+        </tr></thead><tbody id="predBody"></tbody></table>
       </div>
     </div>
-    <div class="filter-bar">
-      <select id="fInst" onchange="renderTable()"></select>
-      <select id="fHit" onchange="renderTable()"><option value="">全部结果</option><option value="hit">方向命中</option><option value="miss">方向未中</option></select>
-      <input id="fSearch" placeholder="搜索..." oninput="renderTable()" style="flex:1;min-width:100px">
+  </div>
+
+  <!-- Market -->
+  <div class="page" id="page-market">
+    <div class="card">
+      <div class="section-header"><h3>利率债收益率曲线</h3><button class="btn btn-outline" onclick="exportMarket()">导出数据</button></div>
+      <div class="chart-box" id="chartMarket"></div>
     </div>
-    <div style="overflow-x:auto"><table><thead><tr>
-      <th onclick="sortBy('score')" id="sh-score">综合分</th>
-      <th onclick="sortBy('date')" id="sh-date">日期</th>
-      <th onclick="sortBy('inst')" id="sh-inst">机构</th>
-      <th onclick="sortBy('target')" id="sh-target">标的</th>
-      <th onclick="sortBy('horizon')" id="sh-horizon">时间窗</th>
-      <th onclick="sortBy('dirScore')" id="sh-dir">方向</th>
-      <th>幅度误差</th>
-      <th>区间</th>
-    </tr></thead><tbody id="predBody"></tbody></table></div>
+  </div>
+
+  <!-- Framework -->
+  <div class="page" id="page-framework">
+    <div class="card"><h3>中信证券 · 五层推导体系</h3><p class="text-muted mb-12">蒸馏自2026年利率债策略报告 · 评分验证 76/100</p><div id="frameworkContent"></div></div>
+    <div class="card"><h3>中信证券 2026 预测一览</h3><div id="citicPreds"></div></div>
   </div>
 </div>
 
-<div class="page" id="page-market">
-  <div class="card">
-    <div class="section-header"><h3>利率债收益率曲线</h3><button class="btn btn-outline" onclick="exportMarketCSV()">导出数据</button></div>
-    <div class="chart-box" id="chartMarket"></div>
-  </div>
-</div>
-
-<div class="page" id="page-framework">
-  <div class="card">
-    <h3>中信证券 · 五层推导体系</h3>
-    <p style="color:var(--muted);font-size:13px;margin-bottom:16px">蒸馏自 2026 年利率债策略报告 · 评分验证 76/100</p>
-    <div id="frameworkContent"></div>
-  </div>
-  <div class="card">
-    <h3>中信证券 2026 预测一览</h3>
-    <div id="citicPreds"></div>
-  </div>
-</div>
-
-<div class="modal" id="modal" onclick="if(event.target===this)closeModal()">
-  <div class="modal-box">
-    <button class="modal-close" onclick="closeModal()">&times;</button>
-    <h3 id="modalTitle"></h3>
-    <div id="modalBody"></div>
-  </div>
-</div>
-
+<!-- Modal -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal"><button class="close" onclick="closeModal()">&times;</button><h3 id="modalTitle"></h3><div id="modalBody"></div></div>
 </div>
 
 <script>
-var D = _D, sortK = 'score', sortD = -1;
+var D=_D, sortK='score',sortD=-1;
 
-function switchTab(t) {
-  document.querySelectorAll('.tab, .page').forEach(e => e.classList.remove('active'));
+function switchTab(t){
+  document.querySelectorAll('.tab,.page').forEach(function(e){e.classList.remove('active')});
   document.querySelector('[data-tab="'+t+'"]').classList.add('active');
   document.getElementById('page-'+t).classList.add('active');
-  setTimeout(() => { [c1,c2,c3].forEach(c => c&&c.resize&&c.resize()); }, 100);
+  setTimeout(function(){[c1,c2,c3,c4].forEach(function(c){c&&c.resize&&c.resize()})},100);
 }
-
-// Stats
-function renderStats() {
-  var s = D.st;
-  document.getElementById('statsBar').innerHTML = [
-    ['评分预测', s.scoredPredictions+'/'+s.totalPredictions, 'var(--accent)'],
-    ['机构数', s.institutionCount, 'var(--green)'],
-    ['平均分', s.avgScore, 'var(--gold)'],
-    ['研报数', s.totalReports, 'var(--accent)'],
-    ['交易日', s.tradingDays, ''],
-  ].map(x => '<div class="stat-card"><div class="num" style="color:'+x[2]+'">'+x[1]+'</div><div class="label">'+x[0]+'</div></div>').join('');
+function renderStats(){
+  var s=D.st;
+  document.getElementById('statsBar').innerHTML=[
+    {v:s.sp+'/'+s.tp,l:'预测评分',c:'#1a73e8'},{v:s.ic,l:'机构数',c:'#059669'},{v:s.av,l:'平均分',c:'#f59e0b'},{v:s.tr,l:'研报数',c:'#1a73e8'},{v:s.td,l:'交易日',c:'#6b7a8f'}
+  ].map(function(x){return '<div class="stat-card"><div class="num" style="color:'+x.c+'">'+x.v+'</div><div class="label">'+x.l+'</div></div>'}).join('');
 }
-
-// Ranking
-function renderRank() {
-  var max = Math.max(...D.rk.map(r => r.avgScore));
-  var med = ['gold','silver','bronze'];
-  var cols = ['#ffd700','#c0c0c0','#cd7f32','#58a6ff','#8b949e'];
-  document.getElementById('rankList').innerHTML = D.rk.map(function(r,i){
-    var pct = r.avgScore/max*100;
-    return '<div class="rank-item"><div class="rank-num'+(med[i]?' '+med[i]:'')+'">'+(i+1)+'</div>'+
-      '<div class="rank-info"><div class="name">'+r.name+'</div><div class="detail">'+r.count+' 条预测</div>'+
-      '<div class="rank-bar"><div class="rank-bar-fill" style="width:'+pct+'%;background:'+(cols[i]||cols[4])+'"></div></div></div>'+
-      '<div class="rank-score" style="color:'+(cols[i]||cols[4])+'">'+r.avgScore+'</div></div>';
+function renderConsensus(){
+  var l=D.latest,low=1.693,high=1.793,mid=1.743;
+  document.getElementById('consensusBox').innerHTML=
+    '<div class="title">天团共识 · 未来1个月 10Y国债收益率</div>'+
+    '<div class="range">'+low.toFixed(2)+'% <span>—</span> '+high.toFixed(2)+'%</div>'+
+    '<div class="meta">'+
+      '<div class="meta-item">共识中点: <strong>'+mid.toFixed(2)+'%</strong></div>'+
+      '<div class="meta-item">当前: <strong>'+l.t10+'%</strong></div>'+
+      '<div class="meta-item"><span class="tag tag-green">强共识</span></div>'+
+      '<div class="meta-item">方向: 低位震荡</div>'+
+      '<div class="meta-item"><span class="tag tag-blue">OMO '+l.omo+'%</span></div>'+
+    '</div>'+
+    '<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(147,197,253,.5)">'+
+      '<div class="text-muted">OMO 1.40%锚定 + 10Y-OMO利差33bp低于中枢50bp + 6月供给高峰 + 机构止盈风险积累</div></div>';
+}
+function renderViews(){
+  document.getElementById('institutionViews').innerHTML=
+    '<div class="inst-view"><div class="avatar" style="background:linear-gradient(135deg,#1a73e8,#0d47a1)">信</div><div class="body">'+
+      '<div class="inst-name">中信证券 <span class="inst-weight">权重 35% · 历史评分 35.8/100</span></div>'+
+      '<div class="inst-view-text">未来1个月 10Y在 <strong>1.68%-1.78%</strong> 低位震荡。OMO 1.40%锚定+利差33bp低于中枢50bp，下行空间有限。供给高峰+资金利率约束，1.70%有强支撑。</div>'+
+      '<div class="inst-source">框架: 五层推导体系 · 引用: 2026下半年策略(2026-05-25)</div></div></div>'+
+    '<div class="inst-view"><div class="avatar" style="background:linear-gradient(135deg,#94a3b8,#64748b)">综</div><div class="body">'+
+      '<div class="inst-name">综合机构 <span class="inst-weight">权重 65% · 历史评分 36.1/100</span></div>'+
+      '<div class="inst-view-text">未来1个月 10Y在 <strong>1.70%-1.80%</strong> 窄幅波动。年初以来下行趋势进入平台期，缺乏突破1.70%或1.80%的关键催化剂。</div>'+
+      '<div class="inst-source">框架: 通用分析</div></div></div>';
+}
+function renderRank(){
+  var max=Math.max.apply(Math,D.rk.map(function(r){return r.score})),medals=['r1','r2','r3'],colors=['#f59e0b','#94a3b8','#d97706','#1a73e8','#6b7a8f'];
+  document.getElementById('rankList').innerHTML=D.rk.map(function(r,i){
+    return '<div class="rank-item"><div class="rank-num '+(medals[i]||'')+'">'+(i+1)+'</div>'+
+      '<div class="rank-info"><div class="name">'+r.name+'</div><div class="detail">'+r.cnt+'条预测 · 权重'+(r.weight*100).toFixed(0)+'%</div>'+
+      '<div class="rank-bar"><div class="rank-bar-fill" style="width:'+(r.score/max*100)+'%;background:'+(colors[i]||colors[4])+'"></div></div></div>'+
+      '<div class="rank-score">'+r.score+'</div></div>';
   }).join('');
 }
 
-// Overview chart
-var c1;
-function renderChart1() {
-  c1 = echarts.init(document.getElementById('chartOverview'));
-  var dates = D.ts.map(function(d){return d.d;});
-  c1.setOption({
-    tooltip:{trigger:'axis',valueFormatter:function(v){return v+'%'}},
-    legend:{data:['10Y国债','30Y国债'],textStyle:{color:'#8b949e'},bottom:0},
-    grid:{top:10,right:20,bottom:40,left:40},
-    xAxis:{type:'category',data:dates,axisLabel:{fontSize:10,color:'#8b949e'}},
-    yAxis:{type:'value',axisLabel:{formatter:'{value}%',fontSize:10,color:'#8b949e'},splitLine:{lineStyle:{color:'#21262d'}}},
-    series:[
-      {name:'10Y国债',type:'line',data:D.ts.map(function(d){return d.t10;}),smooth:true,lineStyle:{width:2,color:'#58a6ff'}},
-      {name:'30Y国债',type:'line',data:D.ts.map(function(d){return d.t30;}),smooth:true,lineStyle:{width:2,color:'#d29922'}}
-    ]
-  });
+var c1;function renderChart1(){
+  c1=echarts.init(document.getElementById('chartOverview'));
+  c1.setOption({tooltip:{trigger:'axis',valueFormatter:function(v){return v+'%'}},legend:{data:['10Y国债','30Y国债'],textStyle:{color:'#6b7a8f'},bottom:0},grid:{top:10,right:20,bottom:40,left:45},xAxis:{type:'category',data:D.ts.map(function(d){return d.d}),axisLabel:{fontSize:10,color:'#94a3b8'}},yAxis:{type:'value',axisLabel:{formatter:'{value}%',fontSize:10,color:'#94a3b8'},splitLine:{lineStyle:{color:'#f0f2f5'}}},series:[{name:'10Y国债',type:'line',data:D.ts.map(function(d){return d.t10}),smooth:true,lineStyle:{width:2,color:'#1a73e8'},areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(26,115,232,.15)'},{offset:1,color:'rgba(26,115,232,0)']}}}},{name:'30Y国债',type:'line',data:D.ts.map(function(d){return d.t30}),smooth:true,lineStyle:{width:2,color:'#f59e0b'}}]});
+}
+var c2;function renderChart2(){
+  c2=echarts.init(document.getElementById('chartDist'));
+  var c=[0,0,0,0,0];D.pr.forEach(function(p){c[Math.min(Math.floor(p.score/20),4)]++});
+  c2.setOption({tooltip:{trigger:'axis'},grid:{top:10,right:20,bottom:30,left:40},xAxis:{type:'category',data:['0-20','20-40','40-60','60-80','80-100'],axisLabel:{color:'#94a3b8'}},yAxis:{type:'value',splitLine:{lineStyle:{color:'#f0f2f5'}}},series:[{type:'bar',data:c,barWidth:'55%',itemStyle:{color:{type:'linear',x:0,y:0,x:1,y:0,colorStops:[{offset:0,color:'#dc2626'},{offset:.5,color:'#f59e0b'},{offset:1,color:'#16a34a'}]}}}]});
+}
+var c3;function renderChart3(){
+  c3=echarts.init(document.getElementById('chartMarket'));
+  c3.setOption({tooltip:{trigger:'axis',valueFormatter:function(v){return v+'%'}},legend:{data:['10Y国债','30Y国债','OMO 7D','CDB 10Y'],textStyle:{color:'#6b7a8f'},bottom:0},grid:{top:10,right:20,bottom:40,left:45},xAxis:{type:'category',data:D.ts.map(function(d){return d.d}),axisLabel:{fontSize:10,color:'#94a3b8'}},yAxis:{type:'value',axisLabel:{formatter:'{value}%',fontSize:10,color:'#94a3b8'},splitLine:{lineStyle:{color:'#f0f2f5'}}},series:[{name:'10Y国债',type:'line',data:D.ts.map(function(d){return d.t10}),smooth:true,lineStyle:{width:2,color:'#1a73e8'}},{name:'30Y国债',type:'line',data:D.ts.map(function(d){return d.t30}),smooth:true,lineStyle:{width:2,color:'#f59e0b'}},{name:'OMO 7D',type:'line',data:D.ts.map(function(d){return d.omo}),step:'end',lineStyle:{width:1,color:'#16a34a',type:'dashed'}},{name:'CDB 10Y',type:'line',data:D.ts.map(function(d){return d.cdb10}),smooth:true,lineStyle:{width:1,color:'#ec4899'}}]});
+}
+var c4;function renderChart4(){
+  c4=echarts.init(document.getElementById('chartDrivers'));
+  c4.setOption({tooltip:{trigger:'axis'},grid:{top:10,right:20,bottom:30,left:45},xAxis:{type:'category',data:['利差压缩空间','OMO锚定','供给压力','机构止盈','存款搬家','通胀回升'],axisLabel:{color:'#94a3b8',fontSize:11}},yAxis:{type:'value',axisLabel:{formatter:'{value}bp',color:'#94a3b8'},splitLine:{lineStyle:{color:'#f0f2f5'}}},series:[{type:'bar',data:[17,0,15,12,-8,10],barWidth:'50%',itemStyle:{color:function(p){return p.value>=0?{type:'linear',x:0,y:0,x:1,y:0,colorStops:[{offset:0,color:'#3b82f6'},{offset:1,color:'#1d4ed8'}]}:{type:'linear',x:0,y:0,x:1,y:0,colorStops:[{offset:0,color:'#10b981'},{offset:1,color:'#059669'}]}}}}]});
 }
 
-// Score distribution
-var c2;
-function renderChart2() {
-  c2 = echarts.init(document.getElementById('chartDist'));
-  var bins = [0,20,40,60,80,100], counts = [0,0,0,0,0];
-  D.pr.forEach(function(p){
-    var i = Math.min(Math.floor(p.score/20),4);
-    counts[i]++;
-  });
-  c2.setOption({
-    tooltip:{trigger:'axis'},grid:{top:10,right:20,bottom:30,left:40},
-    xAxis:{type:'category',data:['0-20','20-40','40-60','60-80','80-100'],axisLabel:{color:'#8b949e'}},
-    yAxis:{type:'value',splitLine:{lineStyle:{color:'#21262d'}}},
-    series:[{type:'bar',data:counts,itemStyle:{color:{type:'linear',x:0,y:0,x:1,y:0,colorStops:[{offset:0,color:'#f85149'},{offset:.5,color:'#d29922'},{offset:1,color:'#3fb950'}]}},barWidth:'60%'}]
-  });
-}
-
-// Market chart
-var c3;
-function renderChart3() {
-  c3 = echarts.init(document.getElementById('chartMarket'));
-  var dates = D.ts.map(function(d){return d.d;});
-  c3.setOption({
-    tooltip:{trigger:'axis',valueFormatter:function(v){return v+'%'}},
-    legend:{data:['10Y国债','30Y国债','OMO 7D','CDB 10Y'],textStyle:{color:'#8b949e'},bottom:0},
-    grid:{top:10,right:20,bottom:40,left:40},
-    xAxis:{type:'category',data:dates,axisLabel:{fontSize:10,color:'#8b949e'}},
-    yAxis:{type:'value',axisLabel:{formatter:'{value}%',fontSize:10,color:'#8b949e'},splitLine:{lineStyle:{color:'#21262d'}}},
-    series:[
-      {name:'10Y国债',type:'line',data:D.ts.map(function(d){return d.t10;}),smooth:true,lineStyle:{width:2,color:'#58a6ff'}},
-      {name:'30Y国债',type:'line',data:D.ts.map(function(d){return d.t30;}),smooth:true,lineStyle:{width:2,color:'#d29922'}},
-      {name:'OMO 7D',type:'line',data:D.ts.map(function(d){return d.omo;}),step:'end',lineStyle:{width:1,color:'#3fb950',type:'dashed'}},
-      {name:'CDB 10Y',type:'line',data:D.ts.map(function(d){return d.cdb10;}),smooth:true,lineStyle:{width:1,color:'#f0883e'}}
-    ]
-  });
-}
-
-// Prediction table
-function sortBy(k) {
-  if (sortK === k) sortD *= -1; else { sortK = k; sortD = -1; }
-  renderTable();
-  document.querySelectorAll('#page-preds th').forEach(function(t){t.style.color='';});
-  var el = document.getElementById('sh-'+k);
-  if (el) el.style.color = 'var(--accent)';
-}
-
-function renderTable() {
-  var fi = document.getElementById('fInst').value;
-  var fh = document.getElementById('fHit').value;
-  var fs = document.getElementById('fSearch').value.toLowerCase();
-  var list = D.pr.filter(function(p){
-    if (fi && p.inst !== fi) return false;
-    if (fh === 'hit' && !p.dirHit) return false;
-    if (fh === 'miss' && p.dirHit !== false) return false;
-    if (fs && p.target.toLowerCase().indexOf(fs) < 0 && p.inst.toLowerCase().indexOf(fs) < 0) return false;
-    return true;
-  });
-  list.sort(function(a,b){
-    var va = a[sortK], vb = b[sortK];
-    if (va == null) va = -999; if (vb == null) vb = -999;
-    if (va < vb) return sortD; if (va > vb) return -sortD;
-    return 0;
-  });
-  document.getElementById('predBody').innerHTML = list.map(function(p){
-    var dt = p.dirHit === true ? '<span class="tag tag-yes">命中</span>' :
-             p.dirHit === false ? '<span class="tag tag-no">未中</span>' : '<span class="tag tag-na">待验</span>';
-    var rt = p.rangeHit === true ? '<span class="tag tag-yes">命中</span>' :
-             p.rangeHit === false ? '<span class="tag tag-no">未中</span>' : '-';
-    var err = p.magErr != null ? p.magErr + 'bp' : '-';
+function sortBy(k){if(sortK===k)sortD*=-1;else{sortK=k;sortD=-1;}renderTable();document.querySelectorAll('#page-predictions th').forEach(function(t){t.style.color=''});var el=document.getElementById('sh-'+k);if(el)el.style.color='#1a73e8';}
+function renderTable(){
+  var fi=document.getElementById('fInst').value,fh=document.getElementById('fHit').value,fs=document.getElementById('fSearch').value.toLowerCase();
+  var list=D.pr.filter(function(p){if(fi&&p.inst!==fi)return false;if(fh==='hit'&&!p.dh)return false;if(fh==='miss'&&p.dh!==false)return false;if(fs&&p.target.toLowerCase().indexOf(fs)<0&&p.inst.toLowerCase().indexOf(fs)<0)return false;return true;});
+  list.sort(function(a,b){var va=a[sortK]||0,vb=b[sortK]||0;if(va<vb)return sortD;if(va>vb)return -sortD;return 0});
+  document.getElementById('predBody').innerHTML=list.map(function(p){
+    var dt=p.dh===true?'<span class="tag tag-ok">命中</span>':p.dh===false?'<span class="tag tag-fail">未中</span>':'<span class="tag tag-na">待验</span>';
+    var rt=p.rh===true?'<span class="tag tag-ok">命中</span>':p.rh===false?'<span class="tag tag-fail">未中</span>':'-';
+    var err=p.me!=null?p.me+'bp':'-';
     return '<tr onclick="showDetail(\''+p.id+'\')"><td><strong>'+p.score+'</strong></td><td>'+p.date+'</td><td>'+p.inst+'</td><td>'+p.target+'</td><td>'+p.horizon+'</td><td>'+dt+'</td><td>'+err+'</td><td>'+rt+'</td></tr>';
   }).join('');
-  // populate filter
-  var sel = document.getElementById('fInst');
-  var cur = sel.value;
-  var insts = [], seen = {};
-  D.pr.forEach(function(p){if(!seen[p.inst]){seen[p.inst]=1;insts.push(p.inst);}});
-  sel.innerHTML = '<option value="">全部机构</option>' + insts.map(function(i){return '<option value="'+i+'"'+(i===cur?' selected':'')+'>'+i+'</option>';}).join('');
+  var sel=document.getElementById('fInst'),cur=sel.value,seen={},arr=[];
+  D.pr.forEach(function(p){if(!seen[p.inst]){seen[p.inst]=1;arr.push(p.inst)}});
+  sel.innerHTML='<option value="">全部机构</option>'+arr.map(function(i){return '<option value="'+i+'"'+(i===cur?' selected':'')+'>'+i+'</option>'}).join('');
 }
-
-// Detail modal
-function showDetail(id) {
-  var p = D.pr.filter(function(x){return x.id===id;})[0];
-  if (!p) return;
-  document.getElementById('modalTitle').textContent = p.target + ' · ' + p.inst;
-  document.getElementById('modalBody').innerHTML =
+function showDetail(id){
+  var p=D.pr.filter(function(x){return x.id===id})[0];if(!p)return;
+  document.getElementById('modalTitle').textContent=p.target+' - '+p.inst;
+  document.getElementById('modalBody').innerHTML=
     '<div class="mf"><span>评分</span><span class="v">'+p.score+'/100</span></div>'+
-    '<div class="mf"><span>预测方向</span><span class="v">'+(p.predDir||'-')+'</span></div>'+
-    '<div class="mf"><span>实际方向</span><span class="v">'+(p.actDir||'-')+'</span></div>'+
-    '<div class="mf"><span>方向命中</span><span class="v">'+(p.dirHit===true?'是':p.dirHit===false?'否':'待验证')+'</span></div>'+
-    '<div class="mf"><span>起始值</span><span class="v">'+(p.startVal!=null?p.startVal+'%':'-')+'</span></div>'+
-    '<div class="mf"><span>结束值</span><span class="v">'+(p.endVal!=null?p.endVal+'%':'-')+'</span></div>'+
-    (p.magErr!=null?'<div class="mf"><span>幅度误差</span><span class="v">'+p.magErr+'bp</span></div>':'')+
-    (p.rangeHit!=null?'<div class="mf"><span>区间命中</span><span class="v">'+(p.rangeHit?'是':'否')+'</span></div>':'')+
+    '<div class="mf"><span>预测方向</span><span class="v">'+(p.pd||'-')+'</span></div>'+
+    '<div class="mf"><span>实际方向</span><span class="v">'+(p.ad||'-')+'</span></div>'+
+    '<div class="mf"><span>方向命中</span><span class="v">'+(p.dh===true?'是':p.dh===false?'否':'待验证')+'</span></div>'+
+    '<div class="mf"><span>起始值</span><span class="v">'+(p.sv!=null?p.sv+'%':'-')+'</span></div>'+
+    '<div class="mf"><span>结束值</span><span class="v">'+(p.ev!=null?p.ev+'%':'-')+'</span></div>'+
+    (p.me!=null?'<div class="mf"><span>幅度误差</span><span class="v">'+p.me+'bp</span></div>':'')+
+    (p.rh!=null?'<div class="mf"><span>区间命中</span><span class="v">'+(p.rh?'是':'否')+'</span></div>':'')+
     '<div class="mf"><span>时间窗口</span><span class="v">'+p.horizon+'</span></div>';
   document.getElementById('modal').classList.add('show');
 }
+function closeModal(){document.getElementById('modal').classList.remove('show')}
 
-function closeModal() { document.getElementById('modal').classList.remove('show'); }
-
-// Framework
-function renderFramework() {
-  var layers = [
-    {t:'宏观基本面',d:'内需弱+外需高景气 → 结构性复苏 · 经济增速波动性小',i:'GDP增速、社融、出口、CPI、PPI'},
-    {t:'货币政策取向',d:'OMO 7D 1.40% 为锚 + 利差中枢 50bp → 10Y 中性利率 1.90%',i:'降准降息节奏、MLF、央行国债操作'},
-    {t:'资金面与机构行为',d:'存款搬家链条：出口结汇→存款活化→银行配置→利率顶部约束',i:'DR001/DR007、基金久期、配置盘力度'},
-    {t:'供给与技术面',d:'政府债发行节奏 + 技术面信号（换手率/股债比价）',i:'超长债供给、30Y换手率、股债性价比'},
-    {t:'策略输出',d:'利率区间 + 久期建议 + 品种选择',i:'目标区间1.7-1.9%、哑铃型/均衡型结构'},
-  ];
-  document.getElementById('frameworkContent').innerHTML = layers.map(function(l,i){
-    return '<div class="fw-layer"><div class="fw-label">L'+(i+1)+'</div><div class="fw-content">'+
-      '<div class="t">'+l.t+'</div><div class="d">'+l.d+'</div>'+
-      '<div class="d" style="color:var(--accent);font-size:11px;margin-top:4px">'+l.i+'</div></div></div>'+
-      (i<layers.length-1?'<div class="fw-arrow">↓</div>':'');
+function renderFramework(){
+  var ls=[{t:'宏观基本面',d:'内需弱+外需高景气 → 结构性复苏',i:'GDP增速、社融、出口、CPI、PPI'},{t:'货币政策取向',d:'OMO 1.40%为锚 + 利差中枢50bp',i:'降准降息、MLF、央行国债操作'},{t:'资金面与机构行为',d:'存款搬家链条：结汇→存款→配置→利率顶部',i:'DR001/DR007、基金久期、配置盘'},{t:'供给与技术面',d:'政府债发行 + 换手率 + 股债比价',i:'超长债供给、30Y换手率'},{t:'策略输出',d:'利率区间 + 久期 + 品种选择',i:'区间1.7-1.9%、哑铃型/均衡型'}];
+  document.getElementById('frameworkContent').innerHTML=ls.map(function(l,i){
+    return '<div class="fw-layer"><div class="fw-label">L'+(i+1)+'</div><div class="fw-content"><div class="t">'+l.t+'</div><div class="d">'+l.d+'</div><div class="d" style="color:#1a73e8;font-size:11px;margin-top:4px">'+l.i+'</div></div></div>'+(i<ls.length-1?'<div class="fw-arrow">↓</div>':'');
   }).join('');
 }
-
-// CITIC predictions
-function renderCitic() {
-  document.getElementById('citicPreds').innerHTML = D.cs.map(function(p){
-    var rng = p.rangeLow != null ? ' <span style="color:var(--accent)">['+p.rangeLow+'-'+p.rangeHigh+'%]</span>' : '';
-    var clr = p.confidence === 'high' ? 'var(--green)' : p.confidence === 'medium' ? 'var(--orange)' : 'var(--muted)';
-    return '<div class="pred-item"><div style="display:flex;justify-content:space-between;align-items:center">'+
-      '<span style="font-weight:600">'+p.date+'</span>'+
-      '<span class="tag" style="background:'+clr+'22;color:'+clr+'">'+p.confidence+'</span></div>'+
-      '<div style="margin-top:4px;font-size:14px">'+p.target+': '+p.direction+rng+'</div>'+
-      '<div class="pd">"'+p.rawText+'"</div></div>';
+function renderCitic(){
+  document.getElementById('citicPreds').innerHTML=D.cs.map(function(p){
+    var rng=p.rl!=null?' <span style="color:#1a73e8">['+p.rl+'-'+p.rh+'%]</span>':'',cl=p.cf==='high'?'#16a34a':p.cf==='medium'?'#d97706':'#94a3b8';
+    return '<div class="pred-item"><div style="display:flex;justify-content:space-between"><span style="font-weight:600">'+p.d+'</span><span class="tag" style="background:'+cl+'15;color:'+cl+'">'+p.cf+'</span></div><div style="margin-top:4px;font-size:14px">'+p.t+': '+p.dr+rng+'</div><div class="pd">"'+p.rt+'"</div></div>';
   }).join('');
 }
+function exportCSV(){var r=[['机构','标的','时间窗','综合分','方向命中','幅度误差bp','区间命中','起始值%','结束值%']];D.pr.forEach(function(p){r.push([p.inst,p.target,p.horizon,p.score,p.dh?'是':'否',p.me!=null?p.me:'',p.rh?'是':'-',p.sv!=null?p.sv:'',p.ev!=null?p.ev:''])});downCsv(r,'研报天团_评分.csv');}
+function exportJSON(){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(D.pr,null,2)],{type:'application/json'}));a.download='研报天团_评分.json';a.click();}
+function exportMarket(){var r=[['日期','10Y国债%','30Y国债%','OMO 7D%','CDB 10Y%']];D.ts.forEach(function(d){r.push([d.d,d.t10,d.t30||'',d.omo||'',d.cdb10||''])});downCsv(r,'研报天团_行情.csv');}
+function downCsv(r,n){var csv=r.map(function(r2){return r2.map(function(v){return typeof v==='string'&&v.indexOf(',')>=0?'"'+v+'"':v}).join(',')}).join('\n');var a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}));a.download=n;a.click();}
 
-// Export
-function exportCSV() {
-  var rows = [['机构','标的','时间窗','综合分','方向命中','幅度误差bp','区间命中','起始值%','结束值%']];
-  D.pr.forEach(function(p){rows.push([p.inst,p.target,p.horizon,p.score,p.dirHit?'是':'否',p.magErr!=null?p.magErr:'',p.rangeHit?'是':'-',p.startVal!=null?p.startVal:'',p.endVal!=null?p.endVal:'']);});
-  downloadCSV(rows,'研报天团_评分.csv');
-}
-function exportJSON() {
-  var blob = new Blob([JSON.stringify(D.pr,null,2)],{type:'application/json'});
-  var a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='研报天团_评分.json'; a.click(); URL.revokeObjectURL(a.href);
-}
-function exportMarketCSV() {
-  var rows = [['日期','10Y国债%','30Y国债%','OMO 7D%','CDB 10Y%']];
-  D.ts.forEach(function(d){rows.push([d.d,d.t10,d.t30||'',d.omo||'',d.cdb10||'']);});
-  downloadCSV(rows,'研报天团_行情.csv');
-}
-function downloadCSV(rows,name) {
-  var csv = rows.map(function(r){return r.map(function(v){return typeof v==='string'&&v.indexOf(',')>=0?'"'+v+'"':v;}).join(',');}).join('\n');
-  var blob = new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
-  var a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); URL.revokeObjectURL(a.href);
-}
-
-// Init
-renderStats();
-renderRank();
-renderChart1();
-renderChart2();
-renderTable();
-renderChart3();
-renderFramework();
-renderCitic();
+renderStats();renderConsensus();renderViews();renderRank();renderChart1();renderChart2();renderTable();renderChart3();renderChart4();renderFramework();renderCitic();
 </script>
 </body>
 </html>
